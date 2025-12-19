@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Opción 1: Usando la propiedad zoom (Funciona en Chrome/Edge, ideal para POS) */
+body {
+  zoom: 0.9; /* Esto equivale al 90% */
+}
+
+/* Opción 2: Si usaste medidas REM (como en Tailwind) */
+html {
+  font-size: 14.4px; /* El default es 16px. 16 * 0.9 = 14.4px */
+}
+
 /* Un estilo base para que se vea limpio */
 body {
   @apply bg-gray-50 text-gray-900;
