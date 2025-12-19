@@ -9,19 +9,22 @@ import { CreditsView } from './views/credits/CreditsView';
 import { SalesHistoryView } from './views/sales/SalesHistoryView';
 import { CashCutView } from './views/cash/CashCutView';
 import { CashCutHistoryView } from './views/cash/CashCutHistoryView';
-import { AdminDashboardView } from './views/admin/AdminDashboardView'; // <--- IMPORTAMOS LA NUEVA VISTA
+import { AdminDashboardView } from './views/admin/AdminDashboardView';
 import { Sidebar } from './components/Sidebar';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
   
-  // Agregamos 'admin'
   const [currentView, setCurrentView] = useState<'pos' | 'inventory' | 'credits' | 'sales' | 'cut' | 'cut_history' | 'admin'>('pos');
   
   // Login States
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [name, setName] = useState("");
+  
+  // NUEVO: Estado para la clave de seguridad del gerente
+  const [adminKey, setAdminKey] = useState(""); 
+
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -37,7 +40,14 @@ function App() {
   };
 
   const handleRegister = async () => {
+    // --- VALIDACIÓN DE SEGURIDAD ---
+    // Cambia "12345" por la contraseña que tú quieras usar
+    if (adminKey !== "12345") {
+        return setError("¡Clave de Gerente incorrecta! No tienes permiso para crear usuarios.");
+    }
+
     if (!name) return setError("Por favor ingresa un nombre.");
+    
     try { 
         await AuthService.register(email, pass, name); 
         window.location.reload();
@@ -46,7 +56,7 @@ function App() {
 
   const handleLogout = () => AuthService.logout();
 
-  // --- ESTRUCTURA PRINCIPAL ---
+  // --- ESTRUCTURA PRINCIPAL (Usuario Logueado) ---
   if (user) {
     return (
       <div className="flex h-screen bg-gray-100 overflow-hidden font-sans">
@@ -58,13 +68,13 @@ function App() {
               {currentView === 'sales' && <SalesHistoryView />}
               {currentView === 'cut' && <CashCutView />}
               {currentView === 'cut_history' && <CashCutHistoryView />}
-              {currentView === 'admin' && <AdminDashboardView />} {/* <--- AQUÍ RENDERIZAMOS EL DASHBOARD */}
+              {currentView === 'admin' && <AdminDashboardView />}
           </main>
       </div>
     );
   }
 
-  // --- LOGIN ---
+  // --- PANTALLA DE LOGIN / REGISTRO ---
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
       <div className="bg-white p-10 rounded-2xl shadow-xl w-96 border border-gray-100">
@@ -78,11 +88,25 @@ function App() {
         
         <div className="space-y-4">
             {isRegistering && (
-                <div className="animate-fadeIn">
-                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nombre (Quién usará esta cuenta)</label>
-                    <input type="text" placeholder="Ej. Vendedora Turno 1" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" onChange={(e) => setName(e.target.value)} />
+                <div className="animate-fadeIn space-y-4">
+                    {/* INPUT DE CLAVE DE GERENTE (NUEVO) */}
+                    <div>
+                        <label className="text-xs font-bold text-red-500 uppercase ml-1">Clave de Gerente (Seguridad)</label>
+                        <input 
+                            type="password" 
+                            placeholder="Clave maestra..." 
+                            className="w-full p-3 border border-red-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-red-50 placeholder-red-200 text-red-900" 
+                            onChange={(e) => setAdminKey(e.target.value)} 
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nombre (Quién usará esta cuenta)</label>
+                        <input type="text" placeholder="Ej. Vendedora Turno 1" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" onChange={(e) => setName(e.target.value)} />
+                    </div>
                 </div>
             )}
+            
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase ml-1">Correo</label>
                 <input type="email" placeholder="usuario@tienda.com" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" onChange={(e) => setEmail(e.target.value)} />
@@ -93,15 +117,15 @@ function App() {
             </div>
         </div>
 
-        {error && <p className="text-red-500 text-xs font-bold mt-4 bg-red-50 p-2 rounded text-center">{error}</p>}
+        {error && <p className="text-red-500 text-xs font-bold mt-4 bg-red-50 p-2 rounded text-center border border-red-100">{error}</p>}
 
         {isRegistering ? (
-            <button onClick={handleRegister} className="w-full mt-6 bg-black text-white py-3 rounded-xl hover:bg-gray-800 font-bold shadow-lg transition-all">Registrar Usuario</button>
+            <button onClick={handleRegister} className="w-full mt-6 bg-black text-white py-3 rounded-xl hover:bg-gray-800 font-bold shadow-lg transition-all">Registrar Usuario (Admin)</button>
         ) : (
             <button onClick={handleLogin} className="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 font-bold shadow-lg shadow-blue-200 transition-all">Ingresar</button>
         )}
         
-        <button onClick={() => { setIsRegistering(!isRegistering); setError(""); }} className="w-full mt-4 text-gray-400 text-xs hover:text-blue-600 font-bold underline">
+        <button onClick={() => { setIsRegistering(!isRegistering); setError(""); setAdminKey(""); }} className="w-full mt-4 text-gray-400 text-xs hover:text-blue-600 font-bold underline">
             {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿Registrar nuevo empleado/usuario?'}
         </button>
       </div>
