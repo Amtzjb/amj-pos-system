@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Esto evita que el navegador intente traducir */
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
 /* Un estilo base para que se vea limpio */
 body {
   @apply bg-gray-50 text-gray-900;
