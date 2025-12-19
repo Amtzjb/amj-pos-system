@@ -42,7 +42,7 @@ function App() {
   const handleRegister = async () => {
     // --- VALIDACIÓN DE SEGURIDAD ---
     // Cambia "12345" por la contraseña que tú quieras usar
-    if (adminKey !== "12345") {
+    if (adminKey !== "momosabroson") {
         return setError("¡Clave de Gerente incorrecta! No tienes permiso para crear usuarios.");
     }
 
