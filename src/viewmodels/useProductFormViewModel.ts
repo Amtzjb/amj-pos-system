@@ -1,107 +1,123 @@
 // src/viewmodels/useProductFormViewModel.ts
 import { useState, useEffect } from 'react';
-import type { Product } from '../models/Product';
 import { ProductService } from '../services/ProductService';
+import type { Product } from '../models/Product';
 
 export const useProductFormViewModel = () => {
-    // Estado inicial limpio
+    // 1. Estado inicial del producto
     const initialProductState: Product = {
-        name: '', description: '', barcode: '',
-        costPrice: 0, marketPrice: 0, salePrice: 0, wholesalePrice: 0, stock: 0
+        name: '',
+        description: '',
+        barcode: '',
+        category: 'otros',
+        isOnDemand: false, // <--- NUEVO: Inicializamos el checkbox en falso
+        costPrice: 0,
+        marketPrice: 0,
+        salePrice: 0,
+        wholesalePrice: 0,
+        stock: 0
     };
 
     const [product, setProduct] = useState<Product>(initialProductState);
-    const [loadingForm, setLoadingForm] = useState(false);
-    const [isEditing, setIsEditing] = useState(false); // Para saber si estamos editando
-
-    // Tabla
     const [productList, setProductList] = useState<Product[]>([]);
-    const [loadingTable, setLoadingTable] = useState(true);
+    const [loading, setLoading] = useState(false);
+    
+    // Estado para saber si estamos editando
+    const [isEditing, setIsEditing] = useState(false); 
 
-    useEffect(() => { fetchProducts(); }, []);
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
     const fetchProducts = async () => {
-        setLoadingTable(true);
-        try {
-            const data = await ProductService.getProducts();
-            setProductList(data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoadingTable(false);
-        }
+        setLoading(true);
+        const data = await ProductService.getProducts();
+        setProductList(data);
+        setLoading(false);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        const finalValue = e.target.type === 'number' ? (parseFloat(value) || 0) : value;
-        setProduct(prev => ({ ...prev, [name]: finalValue }));
+    // --- MODIFICACIÓN IMPORTANTE PARA CHECKBOX ---
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        
+        // Si es un checkbox, leemos 'checked', si no, leemos 'value'
+        const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+
+        setProduct(prev => ({
+            ...prev,
+            // Si es número lo convertimos, si no, pasa directo (o pasa el booleano del checkbox)
+            [name]: type === 'number' ? parseFloat(value) || 0 : finalValue
+        }));
     };
 
-    // --- LÓGICA DE GUARDAR / ACTUALIZAR ---
-    const saveProduct = async () => {
-        if (!product.name || product.salePrice <= 0) {
-            alert("Nombre y Precio Venta son obligatorios");
-            return;
-        }
-
-        setLoadingForm(true);
-        try {
-            if (isEditing && product.id) {
-                // MODO ACTUALIZAR
-                await ProductService.updateProduct(product.id, product);
-                alert('✅ Producto Actualizado');
-            } else {
-                // MODO CREAR NUEVO
-await ProductService.addProduct(product);                alert('✅ Producto Creado');
-            }
-            
-            resetForm();
-            fetchProducts(); // Recargar la tabla
-        } catch (error: any) {
-            alert('❌ Error: ' + error.message);
-        } finally {
-            setLoadingForm(false);
-        }
-    };
-
-    // --- ACCIONES DE TABLA ---
-    const deleteProduct = async (id: string) => {
-        if (!confirm("¿Seguro que quieres borrar este producto? No se puede deshacer.")) return;
-        try {
-            await ProductService.deleteProduct(id);
-            setProductList(prev => prev.filter(p => p.id !== id)); // Lo quitamos de la lista visualmente
-        } catch (error) {
-            alert("Error al eliminar");
-        }
-    };
-
-    const prepareEdit = (productToEdit: Product) => {
-        setProduct(productToEdit); // Subimos los datos al formulario
-        setIsEditing(true); // Activamos modo edición
-        // Hacemos scroll hacia arriba suavemente para que vea el form
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
+    // Función para limpiar y cancelar
     const resetForm = () => {
         setProduct(initialProductState);
         setIsEditing(false);
     };
 
+    const saveProduct = async () => {
+        if (!product.name || product.salePrice <= 0) {
+            alert("Por favor completa el nombre y el precio de venta.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (isEditing && product.id) {
+                // ACTUALIZAR
+                await ProductService.updateProduct(product.id, product);
+                alert("Producto actualizado correctamente");
+            } else {
+                // CREAR NUEVO
+                await ProductService.addProduct(product);
+                alert("Producto guardado correctamente");
+            }
+            
+            resetForm(); // Limpiamos
+            fetchProducts(); // Recargamos lista
+        } catch (error) {
+            console.error(error);
+            alert("Error al guardar");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteProduct = async (id: string) => {
+        if (!confirm("¿Seguro que quieres borrar este producto?")) return;
+        setLoading(true);
+        await ProductService.deleteProduct(id);
+        fetchProducts();
+        setLoading(false);
+    };
+
+    // --- AQUÍ ESTÁ EL TRUCO DEL SCROLL (Mantenido) ---
+    const prepareEdit = (productToEdit: Product) => {
+        setProduct(productToEdit);
+        setIsEditing(true); 
+        
+        // 1. Intenta scrollear la ventana normal
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // 2. IMPORTANTE: Intenta scrollear el contenedor principal (<main>)
+        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     return {
-        form: { 
-            product, 
-            handleChange, 
-            saveProduct, 
-            loading: loadingForm, 
-            isEditing,     // Exportamos esto para cambiar el texto del botón
-            resetForm      // Exportamos esto para el botón "Cancelar"
+        form: {
+            product,
+            handleChange,
+            saveProduct,
+            loading,
+            isEditing,
+            resetForm 
         },
-        table: { 
-            productList, 
-            loading: loadingTable, 
-            deleteProduct, 
-            prepareEdit    // Exportamos la función de editar
+        table: {
+            productList,
+            loading,
+            deleteProduct,
+            prepareEdit 
         }
     };
 };

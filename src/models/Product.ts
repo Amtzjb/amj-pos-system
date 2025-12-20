@@ -3,16 +3,19 @@ export interface Product {
     id?: string;
     name: string;
     description: string;
-    barcode: string;      // Para escaner rápido
-    
+    barcode: string;
+    category?: 'general' | 'snacks' | 'productos' | 'herramientas' | 'otros'; // La categoría que ya usas
+    isOnDemand?: boolean; // El campo de "Sobre Pedido"
+
     // Precios
-    costPrice: number;    // A cómo lo compras tú
-    marketPrice: number;  // Precio "normal" en la calle (para comparar)
-    salePrice: number;    // Precio al que tú lo das de contado
-    wholesalePrice: number; // Precio mayoreo (arriba de 3 piezas)
+    costPrice: number;
+    marketPrice: number;
+    salePrice: number;
+    wholesalePrice: number;
     
     // Stock
     stock: number;
+    minStock?: number; // <--- ¡AGREGA ESTO! (Es el límite para la alerta)
     
     // Fechas
     createdAt?: Date;

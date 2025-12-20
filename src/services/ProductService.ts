@@ -8,13 +8,26 @@ const productCollection = collection(db, "products");
 export const ProductService = {
     // Crear
     addProduct: async (product: Product) => {
-        await addDoc(productCollection, product);
+        // Aseguramos que guarde la categoría, si no viene, pone 'otros'
+        const productToSave = {
+            ...product,
+            category: product.category || 'otros'
+        };
+        await addDoc(productCollection, productToSave);
     },
 
     // Leer
     getProducts: async (): Promise<Product[]> => {
         const snapshot = await getDocs(productCollection);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                ...data,
+                // TRUCO: Si el producto es antiguo y no tiene categoría, le asignamos 'otros' visualmente
+                category: data.category || 'otros' 
+            } as Product;
+        });
     },
 
     // Actualizar datos generales
@@ -23,10 +36,9 @@ export const ProductService = {
         await updateDoc(productRef, updatedData);
     },
 
-    // --- NUEVO: RESTAR STOCK AL VENDER ---
+    // RESTAR STOCK AL VENDER
     updateStock: async (id: string, amountSold: number) => {
         const productRef = doc(db, "products", id);
-        // Usamos increment(-cantidad) para restar de forma segura
         await updateDoc(productRef, {
             stock: increment(-amountSold)
         });
