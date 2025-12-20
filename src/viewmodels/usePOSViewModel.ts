@@ -44,15 +44,23 @@ export const usePOSViewModel = () => {
         setLoading(false);
     };
 
+    // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
     const addToCart = (product: Product) => {
-        if (product.stock <= 0) { alert("¡Sin stock!"); return; }
+        // 1. REGLA MAESTRA: Si NO hay stock Y TAMPOCO es sobre pedido, bloqueamos.
+        // Si es sobre pedido (isOnDemand), ignora el stock y pasa.
+        if (product.stock <= 0 && !product.isOnDemand) { 
+            alert("¡Sin stock físico!"); 
+            return; 
+        }
         
         setCart(prev => {
             const exists = prev.find(item => item.id === product.id);
-            // Validamos que no agregue más de lo que hay en stock en tiempo real
+            
             if (exists) {
-                if (exists.quantity >= product.stock) {
-                    alert("No hay más unidades disponibles");
+                // 2. REGLA DEL CARRITO: Si ya llegamos al tope del stock físico
+                // solo bloqueamos si NO es sobre pedido.
+                if (exists.quantity >= product.stock && !product.isOnDemand) {
+                    alert("No hay más unidades físicas disponibles");
                     return prev;
                 }
                 return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
@@ -162,6 +170,8 @@ export const usePOSViewModel = () => {
             // Recorremos cada producto vendido y restamos su cantidad en Firebase
             for (const item of cart) {
                 if (item.id) {
+                    // Si vendes algo "Sobre Pedido" que tiene 0 stock, aquí pasará a tener -1.
+                    // ¡Esto es CORRECTO! Así sabes que debes 1 unidad.
                     await ProductService.updateStock(item.id, item.quantity);
                 }
             }
