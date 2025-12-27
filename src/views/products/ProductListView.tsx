@@ -14,7 +14,6 @@ export const ProductListView = ({ products, loading, onDelete, onEdit }: Props) 
     const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
     // Función para obtener el estado del stock (Colores y Etiquetas)
-    // La sacamos fuera del render para reusarla en Móvil y PC sin repetir código
     const getStockStatus = (product: Product) => {
         const minStock = product.minStock || 0;
         let className = '';
@@ -50,12 +49,13 @@ export const ProductListView = ({ products, loading, onDelete, onEdit }: Props) 
     if (products.length === 0) return <div className="p-8 text-center text-gray-500 font-medium bg-gray-50 rounded-b-xl">No hay productos registrados todavía.</div>;
 
     return (
-        <div className="bg-gray-100 md:bg-white rounded-xl md:shadow-lg md:border md:border-gray-200">
+        // CAMBIO PRINCIPAL: h-full y flex-col para gestionar el scroll interno
+        <div className="h-full bg-gray-100 md:bg-white rounded-xl md:shadow-lg md:border md:border-gray-200 flex flex-col overflow-hidden">
             
             {/* ========================================================== */}
-            {/* VISTA MÓVIL (CARDS) - Solo visible en pantallas pequeñas */}
+            {/* VISTA MÓVIL (CARDS) - Scroll independiente */}
             {/* ========================================================== */}
-            <div className="md:hidden space-y-4">
+            <div className="md:hidden flex-1 overflow-y-auto p-2 space-y-4 custom-scrollbar">
                 {products.map((product) => {
                     const status = getStockStatus(product);
                     const profit = product.salePrice - product.costPrice;
@@ -82,40 +82,18 @@ export const ProductListView = ({ products, loading, onDelete, onEdit }: Props) 
                                 </span>
                             </div>
 
-                            {/* Grid de Costos (2 columnas) */}
+                            {/* Grid de Costos */}
                             <div className="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <div>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Costo</p>
-                                    <p className="font-medium text-gray-600">{formatCurrency(product.costPrice)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-green-600 font-bold uppercase">Ganancia</p>
-                                    <p className="font-bold text-green-600">{formatCurrency(profit)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-purple-600 font-bold uppercase">Mayoreo</p>
-                                    <p className="font-bold text-purple-600">{formatCurrency(product.wholesalePrice)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">2 Pagos</p>
-                                    <p className="font-medium text-gray-800">${pay2}</p>
-                                </div>
+                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">Costo</p><p className="font-medium text-gray-600">{formatCurrency(product.costPrice)}</p></div>
+                                <div><p className="text-[10px] text-green-600 font-bold uppercase">Ganancia</p><p className="font-bold text-green-600">{formatCurrency(profit)}</p></div>
+                                <div><p className="text-[10px] text-purple-600 font-bold uppercase">Mayoreo</p><p className="font-bold text-purple-600">{formatCurrency(product.wholesalePrice)}</p></div>
+                                <div><p className="text-[10px] text-gray-400 font-bold uppercase">2 Pagos</p><p className="font-medium text-gray-800">${pay2}</p></div>
                             </div>
 
                             {/* Botones de Acción */}
                             <div className="flex gap-2 border-t border-gray-100 pt-3">
-                                <button 
-                                    onClick={() => onEdit(product)}
-                                    className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"
-                                >
-                                    <span>✏️ Editar</span>
-                                </button>
-                                <button 
-                                    onClick={() => product.id && onDelete(product.id)}
-                                    className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"
-                                >
-                                    <span>🗑️ Borrar</span>
-                                </button>
+                                <button onClick={() => onEdit(product)} className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"><span>✏️ Editar</span></button>
+                                <button onClick={() => product.id && onDelete(product.id)} className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"><span>🗑️ Borrar</span></button>
                             </div>
                         </div>
                     );
@@ -123,20 +101,21 @@ export const ProductListView = ({ products, loading, onDelete, onEdit }: Props) 
             </div>
 
             {/* ========================================================== */}
-            {/* VISTA ESCRITORIO (TABLA) - Solo visible en pantallas medianas/grandes */}
+            {/* VISTA ESCRITORIO (TABLA) - Scroll independiente y Header Sticky */}
             {/* ========================================================== */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block flex-1 overflow-auto custom-scrollbar">
                 <table className="min-w-full leading-normal">
-                    <thead>
-                        <tr className="bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                            <th className="px-5 py-4 whitespace-nowrap">PRODUCTO</th>
-                            <th className="px-5 py-4 text-center whitespace-nowrap">STOCK / ALERTA</th>
-                            <th className="px-5 py-4 whitespace-nowrap">COSTOS</th>
-                            <th className="px-5 py-4 text-blue-700 whitespace-nowrap">VENTA (1PZ)</th>
-                            <th className="px-5 py-4 text-purple-700 whitespace-nowrap">MAYOREO (&gt;3)</th>
-                            <th className="px-5 py-4 text-green-700 whitespace-nowrap">GANANCIA</th>
-                            <th className="px-5 py-4 whitespace-nowrap min-w-[160px]">PLAN DE PAGOS</th>
-                            <th className="px-5 py-4 text-center whitespace-nowrap">ACCIONES</th>
+                    {/* CAMBIO CLAVE: sticky top-0 para fijar encabezados */}
+                    <thead className="sticky top-0 z-10">
+                        <tr className="bg-gray-100 text-left text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 shadow-sm">
+                            <th className="px-5 py-4 whitespace-nowrap bg-gray-100">PRODUCTO</th>
+                            <th className="px-5 py-4 text-center whitespace-nowrap bg-gray-100">STOCK / ALERTA</th>
+                            <th className="px-5 py-4 whitespace-nowrap bg-gray-100">COSTOS</th>
+                            <th className="px-5 py-4 text-blue-700 whitespace-nowrap bg-gray-100">VENTA (1PZ)</th>
+                            <th className="px-5 py-4 text-purple-700 whitespace-nowrap bg-gray-100">MAYOREO (&gt;3)</th>
+                            <th className="px-5 py-4 text-green-700 whitespace-nowrap bg-gray-100">GANANCIA</th>
+                            <th className="px-5 py-4 whitespace-nowrap min-w-[160px] bg-gray-100">PLAN DE PAGOS</th>
+                            <th className="px-5 py-4 text-center whitespace-nowrap bg-gray-100">ACCIONES</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">

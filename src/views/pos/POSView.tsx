@@ -105,7 +105,10 @@ export const POSView = () => {
                                         {product.category === 'snacks' ? '🥤' : product.category === 'herramientas' ? '✂️' : product.category === 'productos' ? '🧴' : '📦'}
                                     </div>
                                     
-                                    <h3 className="font-bold text-gray-800 text-sm md:text-base leading-tight mb-1 truncate">{product.name}</h3>
+                                    {/* --- AQUÍ ESTÁ EL CAMBIO: line-clamp-3 para permitir hasta 3 líneas --- */}
+                                    <h3 className="font-bold text-gray-800 text-xs md:text-sm leading-snug mb-2 line-clamp-3 min-h-[2.5em] text-center md:text-left">
+                                        {product.name}
+                                    </h3>
                                     
                                     <div className="flex justify-between items-end">
                                         <p className="text-blue-600 font-black text-base md:text-lg">{formatCurrency(product.salePrice)}</p>
